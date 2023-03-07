@@ -1,20 +1,25 @@
+from datetime import date, datetime
+from typing import Optional, Union
+from uuid import UUID, uuid4
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import UUID4, BaseModel, Field, validator
 from tinydb import TinyDB, Query
 import json
 
 app = FastAPI()
-database = TinyDB("./db.json")
+database = TinyDB("./db.json", indent=4)
 Q = Query()
 
 
 class User(BaseModel):
-    id: int
+    id: UUID | UUID4 = Field(default_factory=uuid4)
     name: str
+    joinDate: date = Field(default_factory=datetime.now)
+    isAdmin: bool = Field(default=False)
 
 
-@app.route("/")
+@app.get("/")
 async def index(request: Request):
     return {"message": "Index Route", "status": 200, "success": True}
 
