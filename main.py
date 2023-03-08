@@ -1,21 +1,32 @@
-from datetime import date, datetime
-from typing import Optional, Union
+from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import List
 from uuid import UUID, uuid4
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from pydantic import UUID4, BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from tinydb import TinyDB, Query
+from utils import JSONResponse
 import json
 
-app = FastAPI()
 database = TinyDB("./db.json", indent=4)
 Q = Query()
 
 
+@asynccontextmanager
+async def lifespan(a: FastAPI):
+    app.state.users = [user for user in database.all()]
+    yield
+    app.state.users.clear()
+
+
+app = FastAPI(lifespan=lifespan)
+
+
 class User(BaseModel):
-    id: UUID | UUID4 = Field(default_factory=uuid4)
+    id: UUID = Field(default_factory=uuid4)
     name: str
-    joinDate: date = Field(default_factory=datetime.now)
+    joinDate: datetime = Field(default_factory=datetime.now)
     isAdmin: bool = Field(default=False)
 
 
@@ -48,3 +59,8 @@ async def get_user(id: int):
             status_code=404,
         )
     return {"user": database.search(Q.id == id)[0], "status": 200}
+
+
+@app.get("/users", response_model=List[User])
+async def getUsers():
+    return JSONResponse([user for user in database.all()])
