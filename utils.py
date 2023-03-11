@@ -5,6 +5,11 @@ from starlette.responses import Response
 import typing
 import json
 
+from tinydb import Query, TinyDB
+
+database = TinyDB("./db.json", indent=4)
+Q = Query()
+
 
 class User(BaseModel):
     id: UUID = Field(default_factory=uuid4)
